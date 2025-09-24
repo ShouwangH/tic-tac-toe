@@ -1,8 +1,9 @@
 
-type GameState = {
+export type GameState = {
     currentPlayer: Player
     board: (Player|'')[][]
     winner: Player|undefined
+    gameID: string
 }
 
 type Player = 'x' | 'o' 
@@ -10,7 +11,8 @@ type Player = 'x' | 'o'
 export const initialGameState: GameState = {
     currentPlayer: 'x',
     board: [['', '', ''], ['', '', ''], ['', '', '']],
-    winner: undefined
+    winner: undefined,
+    gameID: ''
 }
 
 export function makeMove(row:number,col:number, gameState:GameState): GameState {
