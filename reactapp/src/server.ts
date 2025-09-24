@@ -15,7 +15,7 @@ app.use(express.json())
 let allGames: GameState[] = []
 
 app.get("/games",(req,res)=>{
-    res.json(allGames.map(game=>game.id))
+    res.json(allGames.map(game=>game.gameID))
 })
 
 app.get("/game/:id",(req, res) => {
