@@ -1,28 +1,83 @@
-import { useState } from 'react'
-import {makeMove, initialGameState} from './components/tictactoe'
+import { makeMove, initialGameState, GameState } from './tictactoe'
 import './App.css'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
 
 function App() {
-  const [gameState, setGameState] = useState(initialGameState)
+  const fetchGame = async (): Promise<GameState> => {
+    const res = await fetch("/game")
+    if (!res.ok) throw new Error("Failed to get game")
+    return await res.json()
+  }
 
+  const reset = async (): Promise<GameState> =>{
+    const res = await fetch("/reset")
+    if (!res.ok) throw new Error("Failed to reset game")
+    return await res.json()
+  }
+
+  const newMove = async ({row,col}:{row:number,col:number}): Promise<GameState> => {
+    const res = await fetch("/move", {
+      method: "POST",
+      headers: { 'Content-type': 'application/json' },
+      body: JSON.stringify({ row, col })
+    })
+
+    if (!res.ok) throw new Error('Move Failed')
+    return await res.json()
+  }
+
+  const queryClient = useQueryClient()
+
+  const { isPending, error, data } = useQuery<GameState>({
+    queryKey: ['game'],
+    queryFn: fetchGame
+  })
+
+
+  const state = data as GameState
+
+  const resetGame = useMutation({
+    mutationFn: reset,
+    onSuccess: () => {
+      console.log('received')
+      queryClient.invalidateQueries({ queryKey: ['game']})
+    }
+  })
+  
+  const mutation = useMutation({
+    mutationFn: newMove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game'] })
+    }
+  })
+
+  function handleClick(row: number, col: number) {
+    mutation.mutate({ row: row, col: col })
+  }
+
+
+  if (isPending) { }
+  else { 
   return (
     <>
-      <h1 className='text-xl'>Tic Tac Toe</h1>
-      {gameState.winner ? <div className="text-2xl">{gameState.winner} has won</div>:null}
-      <div className="h-70 w-70 grid grid-cols-3 grid-rows-3">
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(0,0,gameState))}> {gameState.board[0][0]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(0,1,gameState))}> {gameState.board[0][1]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(0,2,gameState))}> {gameState.board[0][2]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(1,0,gameState))}> {gameState.board[1][0]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(1,1,gameState))}> {gameState.board[1][1]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(1,2,gameState))}> {gameState.board[1][2]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(2,0,gameState))}> {gameState.board[2][0]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(2,1,gameState))}> {gameState.board[2][1]} </div>
-        <div className='border text-5xl text-center'onClick={()=>setGameState(makeMove(2,2,gameState))}> {gameState.board[2][2]} </div>
+      <div className='flex flex-col items-center'>
+        {state.winner ? <h1>{state.winner} has won</h1> : <h1>Tic Tac Toe</h1>}
+        <div className="h-120 w-120 grid grid-cols-3 grid-rows-3">
+          <div className='border text-5xl text-center' onClick={() => handleClick(0, 0)}> {state.board[0][0]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(0, 1)}> {state.board[0][1]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(0, 2)}> {state.board[0][2]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(1, 0)}> {state.board[1][0]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(1, 1)}> {state.board[1][1]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(1, 2)}> {state.board[1][2]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(2, 0)}> {state.board[2][0]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(2, 1)}> {state.board[2][1]} </div>
+          <div className='border text-5xl text-center' onClick={() => handleClick(2, 2)}> {state.board[2][2]} </div>
+          <button className='border' onClick={() => resetGame.mutate()}>Reset</button>
+        </div>
       </div>
-      <button className='border' onClick={()=>setGameState(initialGameState)}>Reset</button>
     </>
-  )
+  )}
 }
 
 export default App
